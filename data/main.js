@@ -1154,7 +1154,7 @@
         /* ========================================= */
         /* MAPA 3D DE RASTREO (THREE.JS)             */
         /* ========================================= */
-        let rover3DInitialized = false;
+        var rover3DInitialized = false;
         function initRover3D() {
             if (rover3DInitialized) return;
             rover3DInitialized = true;
@@ -1176,10 +1176,10 @@
             container.appendChild(renderer.domElement);
 
             // --- Luces ---
-            const ambientLight = new THREE.AmbientLight(0x445577, 0.6);
+            const ambientLight = new THREE.AmbientLight(0x8899bb, 1.0);
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.2);
             dirLight.position.set(10, 20, 10);
             scene.add(dirLight);
 
@@ -1188,7 +1188,7 @@
             scene.add(pointLight);
 
             // --- Suelo con cuadrícula ---
-            const gridHelper = new THREE.GridHelper(100, 50, 0x1a3a5c, 0x0a1929);
+            const gridHelper = new THREE.GridHelper(100, 50, 0x38bdf8, 0x1e3a5c);
             scene.add(gridHelper);
 
             // Suelo sólido semitransparente
@@ -1196,7 +1196,7 @@
             const floorMat = new THREE.MeshStandardMaterial({
                 color: 0x050d1a,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.4,
                 roughness: 0.9
             });
             const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -1210,7 +1210,7 @@
             // Cuerpo principal
             const bodyGeo = new THREE.BoxGeometry(2, 0.6, 3);
             const bodyMat = new THREE.MeshStandardMaterial({
-                color: 0x1e293b,
+                color: 0x475569,
                 metalness: 0.6,
                 roughness: 0.3
             });
