@@ -243,6 +243,21 @@
                 </div>
             </section>
 
+            <!-- PUBLIC MESSAGES LOG -->
+            <section class="panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h2>📨 PUBLIC MESSAGES</h2>
+                    <span id="msg-status-badge" style="color: var(--accent-green); font-size: 0.8rem;">RECEPCIÓN: ON</span>
+                </div>
+                <div id="public-messages-log" style="height: 120px; overflow-y: auto; background: rgba(0,0,0,0.4); border: 1px solid #333; padding: 10px; font-family: monospace; font-size: 0.85rem; margin-bottom: 10px;">
+                    <div style="color: #666; text-align: center; margin-top: 40px;">[ ESPERANDO MENSAJES ]</div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="action-btn" id="btn-msg-clear" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);">🗑️ VACIAR LOG</button>
+                    <button class="action-btn" id="btn-msg-toggle" style="flex: 1; border-color: var(--accent-yellow); color: var(--accent-yellow);">⏸️ PAUSAR</button>
+                </div>
+            </section>
+
             <!-- CAJA NEGRA -->
             <section class="panel">
                 <h2>🗃️ BLACK BOX</h2>

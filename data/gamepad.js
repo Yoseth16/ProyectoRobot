@@ -160,3 +160,75 @@ function updateGamepad() {
     // Continuar el bucle
     requestAnimationFrame(updateGamepad);
 }
+
+// ==========================================
+// 10. PUBLIC MESSAGES INBOX (BANDEJA PÚBLICA)
+// ==========================================
+let msgReceptionOn = true;
+let publicMessages = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    const msgLog = document.getElementById('public-messages-log');
+    const btnMsgClear = document.getElementById('btn-msg-clear');
+    const btnMsgToggle = document.getElementById('btn-msg-toggle');
+    const msgStatusBadge = document.getElementById('msg-status-badge');
+
+    function renderMessages() {
+        if (!msgLog) return;
+        if (publicMessages.length === 0) {
+            msgLog.innerHTML = '<div style="color: #666; text-align: center; margin-top: 40px;">[ ESPERANDO MENSAJES ]</div>';
+            return;
+        }
+        msgLog.innerHTML = publicMessages.map(m => 
+            `<div style="margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 8px;">
+                <span style="color: #888;">[${m.time}]</span> 
+                <span style="color: var(--accent-cyan);">IP:${m.ip}</span><br>
+                <strong style="color: #fff;">"${m.msg}"</strong>
+                <button class="action-btn" style="padding: 2px 8px; font-size: 0.7rem; float: right; border-color: var(--accent-green); color: var(--accent-green);" onclick="document.getElementById('oled-input').value='${m.msg}'">CARGAR A OLED</button>
+            </div>`
+        ).join('');
+    }
+
+    // Exponemos la función para poder llamarla desde main.js si es necesario
+    window.addPublicMessage = function(msg, fromIP = "192.168.4.15") {
+        if (!msgReceptionOn) return;
+        const time = new Date().toLocaleTimeString();
+        publicMessages.unshift({ time, msg, ip: fromIP });
+        if (publicMessages.length > 50) publicMessages.pop(); // Limitar historial a 50
+        renderMessages();
+    };
+
+    btnMsgClear?.addEventListener('click', () => {
+        publicMessages = [];
+        renderMessages();
+    });
+
+    btnMsgToggle?.addEventListener('click', () => {
+        msgReceptionOn = !msgReceptionOn;
+        btnMsgToggle.innerText = msgReceptionOn ? "⏸️ PAUSAR" : "▶️ REANUDAR";
+        btnMsgToggle.style.borderColor = msgReceptionOn ? "var(--accent-yellow)" : "var(--accent-green)";
+        btnMsgToggle.style.color = msgReceptionOn ? "var(--accent-yellow)" : "var(--accent-green)";
+        
+        if (msgStatusBadge) {
+            msgStatusBadge.innerText = msgReceptionOn ? "RECEPCIÓN: ON" : "RECEPCIÓN: OFF";
+            msgStatusBadge.style.color = msgReceptionOn ? "var(--accent-green)" : "var(--accent-red)";
+        }
+    });
+
+    // Simulador de recepción de mensajes (solo para ver cómo funciona sin múltiples clientes reales)
+    setInterval(() => {
+        // MOCK_MODE viene de main.js
+        if (typeof MOCK_MODE !== 'undefined' && MOCK_MODE && msgReceptionOn && Math.random() > 0.90) {
+            const randomMsgs = [
+                "Hola robot!!", 
+                "¿A dónde vas?", 
+                "¡Cuidado con la pared!", 
+                "Xtart-01 en línea", 
+                "Saludos desde la Tierra",
+                "¿Puedes ver esto?"
+            ];
+            const rMsg = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
+            window.addPublicMessage(rMsg, `192.168.4.${Math.floor(Math.random() * 20 + 2)}`);
+        }
+    }, 5000);
+});

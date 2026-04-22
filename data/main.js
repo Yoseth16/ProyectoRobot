@@ -60,6 +60,11 @@
                 publicOledStatus.innerText = "¡Mensaje transmitido al Rover!";
                 publicOledInput.value = "";
                 setTimeout(() => publicOledStatus.innerText = "", 3000);
+                
+                // Añadir el mensaje al log del piloto (si la función existe)
+                if (typeof window.addPublicMessage === 'function') {
+                    window.addPublicMessage(msg, "192.168.4.GUEST");
+                }
             }
         });
 
