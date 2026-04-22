@@ -82,6 +82,8 @@
                 viewPublic.classList.add('hidden');
                 viewPrivate.classList.remove('hidden');
                 mainTopbar.classList.remove('hidden');
+                // Inicializar el mapa 3D una vez visible
+                setTimeout(() => { if (typeof initRover3D === 'function') initRover3D(); }, 100);
             } else {
                 loginError.innerText = "Credenciales incorrectas.";
             }
@@ -582,6 +584,9 @@
         /* ========================================= */
         /* TELEMETRÍA (POLLING)                      */
         /* ========================================= */
+        // Declaración anticipada para evitar TDZ (temporal dead zone)
+        var isAutopilot = false;
+
         async function updateTelemetry() {
             const dataStr = await fetchRobot('/telemetry');
             if (!dataStr) return; // Fallo de conexión o parseo
@@ -1056,7 +1061,7 @@
         /* ========================================= */
         /* MODO AUTOPILOTO                           */
         /* ========================================= */
-        let isAutopilot = false;
+        // isAutopilot ya declarado arriba (antes de telemetría)
         const btnAutopilot = document.getElementById('btn-autopilot');
         const autoBadge = document.getElementById('auto-badge');
 
@@ -1149,7 +1154,10 @@
         /* ========================================= */
         /* MAPA 3D DE RASTREO (THREE.JS)             */
         /* ========================================= */
-        (function initRover3D() {
+        let rover3DInitialized = false;
+        function initRover3D() {
+            if (rover3DInitialized) return;
+            rover3DInitialized = true;
             const container = document.getElementById('rover-3d-container');
             if (!container || typeof THREE === 'undefined') return;
 
@@ -1444,4 +1452,4 @@
             });
 
             console.log('[3D] Tracking Map inicializado correctamente.');
-        })();
+        }
