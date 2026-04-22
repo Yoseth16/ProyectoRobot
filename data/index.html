@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROVER CONTROL / MISSION XTART-01</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js local — necesario para gráficas de telemetría -->
+    <script src="chart.min.js"></script>
+</head>
+<body>
+
+    <!-- TOPBAR (SOLO VISIBLE EN MISSION CONTROL) -->
+    <header class="topbar hidden" id="main-topbar">
+        <div class="topbar-title">ROVER CONTROL / MISSION XTART-01</div>
+        <div class="connection-info">
+            <span id="ip-display">IP: --</span>
+            <span id="status-indicator" class="status-dot"></span>
+        </div>
+    </header>
+
+    <!-- VISTA 1: LANDING PAGE -->
+    <div id="view-public" class="view">
+        <!-- BOTÓN DE LOGIN (CANDADO) -->
+        <button id="btn-open-login" class="login-lock-btn" title="Acceso a Pilotos">
+            🔒
+        </button>
+
+        <section class="landing-hero" style="background-color: transparent; border: none; text-align: center; margin-top: 15vh;">
+            <div class="landing-logo-placeholder">🛰️</div>
+            <h1 class="hero-title" style="font-size: 3.5rem; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; color: #fff;">MISIÓN ROVER XTART-01</h1>
+            <p class="hero-desc" style="font-size: 1.2rem; max-width: 600px; margin: 0 auto 40px; color: #a0aec0; line-height: 1.6;">
+                Bienvenido a la red de comunicación abierta. Envía tu mensaje a la pantalla frontal del Rover.
+            </p>
+            
+            <div class="public-oled-box">
+                <input type="text" id="public-oled-input" placeholder="Escribe tu mensaje para el robot..." maxlength="32">
+                <button id="btn-public-oled-send" class="public-send-btn">TRANSMITIR MENSAJE</button>
+            </div>
+            <div id="public-oled-status" style="margin-top: 15px; color: var(--accent-green); height: 20px; font-weight: bold; letter-spacing: 1px;"></div>
+        </section>
+    </div>
+
+    <!-- MODAL DE LOGIN -->
+    <div id="login-modal" class="hidden modal-overlay">
+        <div class="modal-content panel">
+            <h2>🔐 ACCESO RESTRINGIDO</h2>
+            <p style="margin-bottom: 20px; color: #888; font-size: 0.9rem;">Requiere credenciales de piloto XTART-01</p>
+            <input type="text" id="login-user" placeholder="Usuario" class="login-input">
+            <input type="password" id="login-pass" placeholder="Contraseña" class="login-input">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-login-submit" class="action-btn" style="flex: 1;">ENTRAR</button>
+                <button id="btn-login-cancel" class="action-btn" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);">CANCELAR</button>
+            </div>
+            <div id="login-error" style="color: var(--accent-red); margin-top: 10px; height: 20px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- MISSION CONTROL (MODO PRINCIPAL) -->
+    <div id="view-private" class="view hidden">
+        <!-- OVERLAY DE EMERGENCIA -->
+        <div id="emergency-overlay" class="hidden">
+            ⚠️ ALERTA DE COLISIÓN - MOTORES BLOQUEADOS ⚠️
+        </div>
+
+        <div class="grid-container">
+        <!-- COLUMNA IZQUIERDA: Cámara y Controles -->
+        <div class="column">
+            <!-- CAMERA STREAM -->
+            <section class="panel">
+                <div class="camera-container">
+                    <div class="crosshair ch-tl"></div>
+                    <div class="crosshair ch-tr"></div>
+                    <div class="crosshair ch-bl"></div>
+                    <div class="crosshair ch-br"></div>
+                    <div id="cam-offline" class="cam-offline-text">[ CAMERA OFFLINE - WAITING FOR SIGNAL ]</div>
+                    <img id="video-stream" src="" alt="NO SIGNAL">
+                    <span class="cam-label">CAM_01: MAIN_OPTICS</span>
+                    <!-- Indicador de autopiloto sobre la cámara -->
+                    <div id="auto-badge" class="auto-badge hidden">🤖 AUTOPILOTO</div>
+                </div>
+
+                <!-- CONTROLES -->
+                <div class="controls-wrapper">
+                    <!-- JOYSTICK VIRTUAL -->
+                    <div class="dpad-container">
+                        <h3>MOVEMENT</h3>
+                        <div id="joystick-base">
+                            <div id="joystick-stick"></div>
+                        </div>
+                    </div>
+
+                    <!-- PANTILT D-PAD -->
+                    <div class="dpad-container">
+                        <h3>PAN/TILT</h3>
+                        <div class="dpad" id="pantilt-dpad">
+                            <div class="d-empty"></div>
+                            <button class="d-btn" data-pt-dir="UP">↑</button>
+                            <div class="d-empty"></div>
+                            <button class="d-btn" data-pt-dir="LEFT">←</button>
+                            <button class="d-btn" data-pt-dir="CENTER">O</button>
+                            <button class="d-btn" data-pt-dir="RIGHT">→</button>
+                            <div class="d-empty"></div>
+                            <button class="d-btn" data-pt-dir="DOWN">↓</button>
+                            <div class="d-empty"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÓN DE AUTOPILOTO -->
+                <div style="margin-top: 15px; display: flex; gap: 10px;">
+                    <button class="action-btn autopilot-btn" id="btn-autopilot" style="flex: 1;">🤖 AUTOPILOTO [OFF]</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- COLUMNA DERECHA: Telemetría, Análisis, Sistemas -->
+        <div class="column" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- TELEMETRÍA -->
+            <section class="panel">
+                <h2>TELEMETRY</h2>
+                <div class="telemetry-grid">
+                    <div class="telemetry-card">
+                        <div class="t-label">TEMP (°C)</div>
+                        <div class="t-value" id="val-temp">--</div>
+                        <div class="progress-bar"><div class="progress-fill" id="bar-temp"></div></div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="t-label">HUMIDITY (%)</div>
+                        <div class="t-value" id="val-hum">--</div>
+                        <div class="progress-bar"><div class="progress-fill" id="bar-hum"></div></div>
+                    </div>
+                    <div class="telemetry-card" style="grid-column: span 2; height: 200px; padding: 10px;">
+                        <canvas id="telemetryChart"></canvas>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="t-label">DISTANCE (cm)</div>
+                        <div class="t-value" id="val-dist">--</div>
+                        <div class="progress-bar"><div class="progress-fill" id="bar-dist" style="background-color: var(--accent-red);"></div></div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="t-label">PRESSURE (hPa)</div>
+                        <div class="t-value" id="val-pres">--</div>
+                        <div class="progress-bar"><div class="progress-fill" id="bar-pres"></div></div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="t-label">LIGHT (lux)</div>
+                        <div class="t-value" id="val-light">--</div>
+                        <div class="progress-bar"><div class="progress-fill" id="bar-light"></div></div>
+                    </div>
+                    <div class="telemetry-card">
+                        <div class="t-label">LINE SENSOR</div>
+                        <div class="t-value" id="val-line">--</div>
+                        <div class="line-indicator" id="line-indicator"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ELIMINADO: SURFACE ANALYSIS -->
+
+            <!-- SISTEMAS (Buzzer + LED + Voz) -->
+            <section class="panel">
+                <h2>SYSTEMS</h2>
+                <div class="systems-grid">
+                    <button class="action-btn sys-btn" id="btn-buzzer-on">🔊 ALARMA</button>
+                    <button class="action-btn sys-btn" id="btn-buzzer-off">🔇 SILENCIO</button>
+                    <button class="action-btn sys-btn led-btn" id="btn-led-r" style="border-color: var(--accent-red); color: var(--accent-red);">🔴</button>
+                    <button class="action-btn sys-btn led-btn" id="btn-led-g" style="border-color: var(--accent-green); color: var(--accent-green);">🟢</button>
+                    <button class="action-btn sys-btn led-btn" id="btn-led-b" style="border-color: var(--accent-blue); color: var(--accent-blue);">🔵</button>
+                    <button class="action-btn sys-btn" id="btn-led-auto">⚙️ AUTO</button>
+                </div>
+                <!-- VOICE CONTROL -->
+                <div style="margin-top: 15px;">
+                    <button class="action-btn voice-btn" id="btn-voice" style="width: 100%; border-color: #ff9800; color: #ff9800;">🎙️ Control por Voz [OFF]</button>
+                    <div id="voice-log" style="text-align: center; color: #888; font-size: 0.85rem; min-height: 18px; margin-top: 5px;"></div>
+                </div>
+            </section>
+
+            <!-- OLED TRANSMITTER -->
+            <section class="panel">
+                <h2>📟 OLED TRANSMITTER</h2>
+                <div class="input-group" style="margin-top: 10px;">
+                    <input type="text" id="oled-input" placeholder="Mensaje para el rover..." style="flex: 1;" maxlength="32">
+                    <button class="action-btn" id="btn-oled-send">ENVIAR</button>
+                </div>
+            </section>
+
+            <!-- CAJA NEGRA -->
+            <section class="panel">
+                <h2>🗃️ BLACK BOX</h2>
+                <div class="blackbox-info">
+                    <span>Registros: <strong id="bbx-count">0</strong></span>
+                    <span>Estado: <strong id="bbx-status" style="color: var(--accent-green);">GRABANDO</strong></span>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <button class="action-btn" id="btn-bbx-download" style="flex: 1; border-color: var(--accent-green); color: var(--accent-green);">📥 DESCARGAR CSV</button>
+                    <button class="action-btn" id="btn-bbx-clear" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);">🗑️ BORRAR</button>
+                </div>
+            </section>
+            
+            <button class="action-btn" id="btn-volver" style="margin-top: 20px; border-color: var(--accent-red); color: var(--accent-red);">⬅️ VOLVER AL INICIO</button>
+        </div>
+        </div> <!-- Fin grid-container -->
+    </div> <!-- Fin VISTA 2 -->
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div>WIFI: <span id="wifi-status">DISCONNECTED</span></div>
+        <div>BATTERY: <span id="battery-status">--%</span></div>
+        <div>T+ <span id="mission-time">00:00:00</span></div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>
