@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Chart.js local — necesario para gráficas de telemetría -->
     <script src="chart.min.js"></script>
+    <!-- Three.js — motor 3D para mapa de rastreo del rover -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
@@ -110,6 +112,22 @@
                 <!-- BOTÓN DE AUTOPILOTO -->
                 <div style="margin-top: 15px; display: flex; gap: 10px;">
                     <button class="action-btn autopilot-btn" id="btn-autopilot" style="flex: 1;">🤖 AUTOPILOTO [OFF]</button>
+                </div>
+            </section>
+
+            <!-- MAPA 3D DE RASTREO -->
+            <section class="panel" id="tracking-panel">
+                <h2>📡 TRACKING MAP</h2>
+                <div id="rover-3d-container"></div>
+                <div class="tracking-info">
+                    <span>X: <strong id="rover-pos-x">0.0</strong></span>
+                    <span>Y: <strong id="rover-pos-y">0.0</strong></span>
+                    <span>HDG: <strong id="rover-heading">0°</strong></span>
+                    <span>DIST: <strong id="rover-total-dist">0.0m</strong></span>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="action-btn sys-btn" id="btn-reset-track" style="flex:1; border-color: var(--accent-yellow); color: var(--accent-yellow);">🔄 RESET</button>
+                    <button class="action-btn sys-btn" id="btn-toggle-trail" style="flex:1;">🛤️ TRAIL ON</button>
                 </div>
             </section>
         </div>

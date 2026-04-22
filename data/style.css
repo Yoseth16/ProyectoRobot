@@ -1031,3 +1031,36 @@
             color: #000;
             box-shadow: 0 0 15px var(--accent-green-glow);
         }
+
+        /* ======================== */
+        /* 3D TRACKING MAP          */
+        /* ======================== */
+        #rover-3d-container {
+            width: 100%;
+            height: 300px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            position: relative;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 0 15px rgba(56, 189, 248, 0.1);
+        }
+
+        #rover-3d-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .tracking-info {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .tracking-info strong {
+            color: var(--accent-green);
+            font-family: var(--font-mono);
+        }

@@ -261,6 +261,9 @@
 
             // Petición real al ESP32
             fetchRobot(`/move?dir=${direction}`);
+
+            // Actualizar modelo 3D del rover
+            if (typeof updateRover3D === 'function') updateRover3D(direction);
         }
 
         // Soltar botón de movimiento = STOP
@@ -1143,4 +1146,302 @@
             }
         });
 
-
+        /* ========================================= */
+        /* MAPA 3D DE RASTREO (THREE.JS)             */
+        /* ========================================= */
+        (function initRover3D() {
+            const container = document.getElementById('rover-3d-container');
+            if (!container || typeof THREE === 'undefined') return;
+
+            // --- Escena, cámara, renderer ---
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.015);
+
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 500);
+            camera.position.set(0, 12, 15);
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x030712);
+            container.appendChild(renderer.domElement);
+
+            // --- Luces ---
+            const ambientLight = new THREE.AmbientLight(0x445577, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x10b981, 0.5, 40);
+            pointLight.position.set(0, 5, 0);
+            scene.add(pointLight);
+
+            // --- Suelo con cuadrícula ---
+            const gridHelper = new THREE.GridHelper(100, 50, 0x1a3a5c, 0x0a1929);
+            scene.add(gridHelper);
+
+            // Suelo sólido semitransparente
+            const floorGeo = new THREE.PlaneGeometry(100, 100);
+            const floorMat = new THREE.MeshStandardMaterial({
+                color: 0x050d1a,
+                transparent: true,
+                opacity: 0.8,
+                roughness: 0.9
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.01;
+            scene.add(floor);
+
+            // --- Modelo del Rover ---
+            const roverGroup = new THREE.Group();
+
+            // Cuerpo principal
+            const bodyGeo = new THREE.BoxGeometry(2, 0.6, 3);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x1e293b,
+                metalness: 0.6,
+                roughness: 0.3
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.7;
+            roverGroup.add(body);
+
+            // Cubierta superior
+            const topGeo = new THREE.BoxGeometry(1.6, 0.3, 2.2);
+            const topMat = new THREE.MeshStandardMaterial({
+                color: 0x334155,
+                metalness: 0.7,
+                roughness: 0.2
+            });
+            const top = new THREE.Mesh(topGeo, topMat);
+            top.position.y = 1.15;
+            roverGroup.add(top);
+
+            // Ruedas (4)
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                metalness: 0.4,
+                roughness: 0.6
+            });
+
+            const wheelPositions = [
+                { x: -1.1, z: 1.0 },
+                { x: 1.1,  z: 1.0 },
+                { x: -1.1, z: -1.0 },
+                { x: 1.1,  z: -1.0 }
+            ];
+            const wheels = [];
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(pos.x, 0.35, pos.z);
+                roverGroup.add(wheel);
+                wheels.push(wheel);
+            });
+
+            // Antena
+            const antennaGeo = new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8);
+            const antennaMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8 });
+            const antenna = new THREE.Mesh(antennaGeo, antennaMat);
+            antenna.position.set(0.5, 1.9, -0.8);
+            roverGroup.add(antenna);
+
+            // Bola de antena
+            const antBallGeo = new THREE.SphereGeometry(0.08, 12, 12);
+            const antBallMat = new THREE.MeshStandardMaterial({
+                color: 0xef4444,
+                emissive: 0xef4444,
+                emissiveIntensity: 0.5
+            });
+            const antBall = new THREE.Mesh(antBallGeo, antBallMat);
+            antBall.position.set(0.5, 2.55, -0.8);
+            roverGroup.add(antBall);
+
+            // LED frontal (faro)
+            const ledGeo = new THREE.SphereGeometry(0.12, 12, 12);
+            const ledMat = new THREE.MeshStandardMaterial({
+                color: 0x38bdf8,
+                emissive: 0x38bdf8,
+                emissiveIntensity: 1.0,
+                transparent: true,
+                opacity: 0.9
+            });
+            const ledLight = new THREE.Mesh(ledGeo, ledMat);
+            ledLight.position.set(0, 0.7, 1.55);
+            roverGroup.add(ledLight);
+
+            // Indicador de dirección (flecha en el frente)
+            const arrowGeo = new THREE.ConeGeometry(0.15, 0.4, 4);
+            const arrowMat = new THREE.MeshStandardMaterial({
+                color: 0x10b981,
+                emissive: 0x10b981,
+                emissiveIntensity: 0.6
+            });
+            const arrow = new THREE.Mesh(arrowGeo, arrowMat);
+            arrow.rotation.x = Math.PI / 2;
+            arrow.position.set(0, 1.35, 1.3);
+            roverGroup.add(arrow);
+
+            scene.add(roverGroup);
+
+            // --- Trail (rastro de desplazamiento) ---
+            const maxTrailPoints = 500;
+            const trailPositions = new Float32Array(maxTrailPoints * 3);
+            const trailGeo = new THREE.BufferGeometry();
+            trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+            trailGeo.setDrawRange(0, 0);
+            const trailMat = new THREE.LineBasicMaterial({
+                color: 0x10b981,
+                transparent: true,
+                opacity: 0.6
+            });
+            const trailLine = new THREE.Line(trailGeo, trailMat);
+            scene.add(trailLine);
+
+            // --- Estado del rover ---
+            let roverX = 0, roverZ = 0;
+            let roverHeading = 0; // en radianes, 0 = mirando hacia +Z
+            let totalDistance = 0;
+            let trailPointCount = 0;
+            let showTrail = true;
+            let currentDirection = 'STOP';
+
+            const MOVE_SPEED = 0.12;
+            const TURN_SPEED = 0.04;
+
+            function addTrailPoint() {
+                if (!showTrail || trailPointCount >= maxTrailPoints) return;
+                const idx = trailPointCount * 3;
+                trailPositions[idx]     = roverX;
+                trailPositions[idx + 1] = 0.05;
+                trailPositions[idx + 2] = roverZ;
+                trailPointCount++;
+                trailGeo.attributes.position.needsUpdate = true;
+                trailGeo.setDrawRange(0, trailPointCount);
+            }
+
+            // --- Función pública para conectar con sendMove() ---
+            window.updateRover3D = function(direction) {
+                currentDirection = direction;
+            };
+
+            // --- Actualización de posición por frame ---
+            let lastTrailDist = 0;
+
+            function updateRoverPosition() {
+                if (currentDirection === 'STOP') return;
+
+                let moved = false;
+
+                if (currentDirection === 'FORWARD') {
+                    roverX += Math.sin(roverHeading) * MOVE_SPEED;
+                    roverZ += Math.cos(roverHeading) * MOVE_SPEED;
+                    totalDistance += MOVE_SPEED;
+                    moved = true;
+                    // Girar ruedas
+                    wheels.forEach(w => w.rotation.x += 0.1);
+                }
+                else if (currentDirection === 'BACKWARD') {
+                    roverX -= Math.sin(roverHeading) * MOVE_SPEED;
+                    roverZ -= Math.cos(roverHeading) * MOVE_SPEED;
+                    totalDistance += MOVE_SPEED;
+                    moved = true;
+                    wheels.forEach(w => w.rotation.x -= 0.1);
+                }
+                else if (currentDirection === 'LEFT') {
+                    roverHeading += TURN_SPEED;
+                }
+                else if (currentDirection === 'RIGHT') {
+                    roverHeading -= TURN_SPEED;
+                }
+
+                // Actualizar posición del grupo
+                roverGroup.position.x = roverX;
+                roverGroup.position.z = roverZ;
+                roverGroup.rotation.y = roverHeading;
+
+                // Trail: añadir punto cada cierta distancia
+                if (moved && totalDistance - lastTrailDist > 0.3) {
+                    addTrailPoint();
+                    lastTrailDist = totalDistance;
+                }
+
+                // Mover la point light con el rover
+                pointLight.position.set(roverX, 5, roverZ);
+
+                // Actualizar UI
+                document.getElementById('rover-pos-x').innerText = roverX.toFixed(1);
+                document.getElementById('rover-pos-y').innerText = roverZ.toFixed(1);
+                document.getElementById('rover-heading').innerText = ((roverHeading * 180 / Math.PI) % 360).toFixed(0) + '°';
+                document.getElementById('rover-total-dist').innerText = totalDistance.toFixed(1) + 'm';
+            }
+
+            // --- Cámara sigue al rover suavemente ---
+            function updateCamera() {
+                const targetX = roverX - Math.sin(roverHeading) * 10;
+                const targetZ = roverZ - Math.cos(roverHeading) * 10;
+
+                camera.position.x += (targetX - camera.position.x) * 0.03;
+                camera.position.z += (targetZ + 5 - camera.position.z) * 0.03;
+                camera.position.y += (12 - camera.position.y) * 0.03;
+
+                camera.lookAt(roverX, 0, roverZ);
+            }
+
+            // --- Pulso de la antena ---
+            let pulseTime = 0;
+            function updatePulse() {
+                pulseTime += 0.03;
+                antBallMat.emissiveIntensity = 0.3 + Math.sin(pulseTime * 2) * 0.4;
+                ledMat.emissiveIntensity = 0.6 + Math.sin(pulseTime * 3) * 0.4;
+            }
+
+            // --- Bucle de renderizado ---
+            function animate() {
+                requestAnimationFrame(animate);
+                updateRoverPosition();
+                updateCamera();
+                updatePulse();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // --- Responsive ---
+            window.addEventListener('resize', () => {
+                if (!container.clientWidth) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            // --- Botones de control del mapa ---
+            document.getElementById('btn-reset-track')?.addEventListener('click', () => {
+                roverX = 0; roverZ = 0; roverHeading = 0;
+                totalDistance = 0; lastTrailDist = 0;
+                trailPointCount = 0;
+                trailGeo.setDrawRange(0, 0);
+                roverGroup.position.set(0, 0, 0);
+                roverGroup.rotation.y = 0;
+                camera.position.set(0, 12, 15);
+
+                document.getElementById('rover-pos-x').innerText = '0.0';
+                document.getElementById('rover-pos-y').innerText = '0.0';
+                document.getElementById('rover-heading').innerText = '0°';
+                document.getElementById('rover-total-dist').innerText = '0.0m';
+            });
+
+            document.getElementById('btn-toggle-trail')?.addEventListener('click', function() {
+                showTrail = !showTrail;
+                trailLine.visible = showTrail;
+                this.innerText = showTrail ? '🛤️ TRAIL ON' : '🛤️ TRAIL OFF';
+                this.style.borderColor = showTrail ? '' : 'var(--accent-red)';
+                this.style.color = showTrail ? '' : 'var(--accent-red)';
+            });
+
+            console.log('[3D] Tracking Map inicializado correctamente.');
+        })();
