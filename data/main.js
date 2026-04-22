@@ -625,6 +625,9 @@
                 if(data.dist !== undefined) {
                     document.getElementById('val-dist').innerText = data.dist;
                     document.getElementById('bar-dist').style.width = `${Math.min(data.dist, 100)}%`;
+                    if (typeof window.updateRoverCone === 'function') {
+                        window.updateRoverCone(data.dist);
+                    }
 
                     if(data.dist < 15) {
                         if(!controlsBlocked) {
@@ -1402,6 +1405,27 @@
                 this.style.borderColor = freeCamera ? 'var(--accent-cyan)' : 'var(--accent-green)';
                 this.style.color = freeCamera ? 'var(--accent-cyan)' : 'var(--accent-green)';
             });
+
+            // Exponer actualización del cono
+            window.updateRoverCone = function(distanceCm) {
+                if (!roverData.ultrasonicCone) return;
+                let scaleZ = Math.min(Math.max(distanceCm / 100, 0.05), 1.5);
+                roverData.ultrasonicCone.scale.set(scaleZ, scaleZ, scaleZ);
+
+                if (distanceCm <= 15) {
+                    roverData.ultrasonicCone.material.color.setHex(0xef4444);
+                    roverData.ultrasonicCone.material.emissive.setHex(0xef4444);
+                    roverData.ultrasonicCone.material.opacity = 0.4;
+                } else if (distanceCm <= 30) {
+                    roverData.ultrasonicCone.material.color.setHex(0xf59e0b);
+                    roverData.ultrasonicCone.material.emissive.setHex(0xf59e0b);
+                    roverData.ultrasonicCone.material.opacity = 0.25;
+                } else {
+                    roverData.ultrasonicCone.material.color.setHex(0x10b981);
+                    roverData.ultrasonicCone.material.emissive.setHex(0x10b981);
+                    roverData.ultrasonicCone.material.opacity = 0.15;
+                }
+            };
 
             console.log('[3D] Tracking Map inicializado correctamente.');
         }

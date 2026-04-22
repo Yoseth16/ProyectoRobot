@@ -19,7 +19,9 @@
     <!-- TOPBAR (SOLO VISIBLE EN MISSION CONTROL) -->
     <header class="topbar hidden" id="main-topbar">
         <div class="topbar-title">ROVER CONTROL / MISSION XTART-01</div>
-        <div class="connection-info">
+        <div class="connection-info" style="display: flex; align-items: center;">
+            <span id="gamepad-status" style="margin-right: 15px; color: #555; font-size: 0.9rem;">🎮 NO GAMEPAD</span>
+            <button id="btn-settings" class="action-btn" style="padding: 5px 15px; margin-right: 15px; border-color: var(--accent-cyan); color: var(--accent-cyan); font-size: 0.8rem;">⚙️ CONFIG</button>
             <span id="ip-display">IP: --</span>
             <span id="status-indicator" class="status-dot"></span>
         </div>
@@ -59,6 +61,39 @@
                 <button id="btn-login-cancel" class="action-btn" style="flex: 1; border-color: var(--accent-red); color: var(--accent-red);">CANCELAR</button>
             </div>
             <div id="login-error" style="color: var(--accent-red); margin-top: 10px; height: 20px; text-align: center;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CONFIGURACIÓN (PID y ESP32-CAM) -->
+    <div id="settings-modal" class="hidden modal-overlay">
+        <div class="modal-content panel" style="max-width: 500px;">
+            <h2>⚙️ CONFIGURACIÓN DEL SISTEMA</h2>
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label style="color: var(--accent-cyan); display: block; margin-bottom: 5px;">IP del ESP32-CAM (Video Stream):</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="cam-ip-input" placeholder="Ej: 192.168.4.2" class="login-input" style="margin-bottom: 0;">
+                    <button id="btn-cam-connect" class="action-btn">CONECTAR</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #333; margin: 20px 0;"></div>
+            <h3 style="color: var(--accent-yellow); margin-bottom: 15px; text-align: left;">AJUSTE PID (Tracción)</h3>
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; text-align: left;">
+                <div style="flex: 1;">
+                    <label style="color: #ccc;">Kp (<span id="val-kp">1.0</span>)</label>
+                    <input type="range" id="slider-kp" min="0" max="5" step="0.1" value="1.0" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="color: #ccc;">Ki (<span id="val-ki">0.0</span>)</label>
+                    <input type="range" id="slider-ki" min="0" max="2" step="0.01" value="0.0" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="color: #ccc;">Kd (<span id="val-kd">0.5</span>)</label>
+                    <input type="range" id="slider-kd" min="0" max="5" step="0.1" value="0.5" style="width: 100%;">
+                </div>
+            </div>
+            <button id="btn-send-pid" class="action-btn" style="width: 100%; border-color: var(--accent-yellow); color: var(--accent-yellow); margin-bottom: 20px;">ENVIAR PID AL ROVER</button>
+            
+            <button id="btn-settings-close" class="action-btn" style="width: 100%; border-color: var(--accent-red); color: var(--accent-red);">CERRAR CONFIGURACIÓN</button>
         </div>
     </div>
 
@@ -234,5 +269,6 @@
     </footer>
 
     <script src="main.js"></script>
+    <script src="gamepad.js"></script>
 </body>
 </html>

@@ -165,6 +165,18 @@ function buildRoverModel(THREE) {
 
     // LED estado
     var ledMat = new THREE.MeshStandardMaterial({color:0x38bdf8,emissive:0x38bdf8,emissiveIntensity:1.0,transparent:true,opacity:0.9});
+    // === CONO SENSOR ULTRASÓNICO (HC-SR04) ===
+    const coneGeo = new THREE.ConeGeometry(2, 10, 16); // Radio 2, Altura 10
+    coneGeo.translate(0, -5, 0); // Vértice en 0,0,0
+    coneGeo.rotateX(Math.PI / 2); // Apuntar hacia adelante (Z)
+    
+    const coneMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981, transparent: true, opacity: 0.15,
+        emissive: 0x10b981, emissiveIntensity: 0.2, depthWrite: false, side: THREE.DoubleSide
+    });
+    const ultrasonicCone = new THREE.Mesh(coneGeo, coneMat);
+    ultrasonicCone.position.set(0, 1.65, 1.6);
+    roverGroup.add(ultrasonicCone);
 
-    return { roverGroup: roverGroup, wheels: wheels, antBallMat: antBallMat, ledMat: ledMat, headlightMat: hlMat, lensMat: lensMat };
+    return { roverGroup: roverGroup, wheels: wheels, antBallMat: antBallMat, ledMat: ledMat, headlightMat: hlMat, lensMat: lensMat, ultrasonicCone: ultrasonicCone };
 }
