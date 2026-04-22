@@ -51,19 +51,30 @@
         const loginError = document.getElementById('login-error');
         const publicOledInput = document.getElementById('public-oled-input');
         const publicOledStatus = document.getElementById('public-oled-status');
+        /* ========================================= */
+        /* IDENTIFICADOR OCULTO (FINGERPRINT)        */
+        /* ========================================= */
+        let clientId = localStorage.getItem('rover_client_id');
+        if (!clientId) {
+            // Genera un ID aleatorio alfanumérico (ej: usr_x8f9a2p)
+            clientId = 'usr_' + Math.random().toString(36).substring(2, 10);
+            localStorage.setItem('rover_client_id', clientId);
+        }
+        console.log(`[Seguridad] ID de cliente oculto asignado: ${clientId}`);
 
         // Función para enviar mensaje público
         document.getElementById('btn-public-oled-send')?.addEventListener('click', () => {
             const msg = publicOledInput.value.trim();
             if (msg) {
-                fetchRobot(`/oled?msg=${encodeURIComponent(msg)}`);
+                // El ESP32 recibirá el mensaje Y el ID oculto del usuario
+                fetchRobot(`/oled?msg=${encodeURIComponent(msg)}&uid=${clientId}`);
                 publicOledStatus.innerText = "¡Mensaje transmitido al Rover!";
                 publicOledInput.value = "";
                 setTimeout(() => publicOledStatus.innerText = "", 3000);
                 
-                // Añadir el mensaje al log del piloto (si la función existe)
+                // Añadir el mensaje al log del piloto mostrando el ID secreto
                 if (typeof window.addPublicMessage === 'function') {
-                    window.addPublicMessage(msg, "192.168.4.GUEST");
+                    window.addPublicMessage(msg, clientId);
                 }
             }
         });

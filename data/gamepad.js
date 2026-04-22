@@ -228,7 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 "¿Puedes ver esto?"
             ];
             const rMsg = randomMsgs[Math.floor(Math.random() * randomMsgs.length)];
-            window.addPublicMessage(rMsg, `192.168.4.${Math.floor(Math.random() * 20 + 2)}`);
+            // Simular un ID de cliente (usr_ + 8 caracteres aleatorios)
+            const randomId = 'usr_' + Math.random().toString(36).substring(2, 10);
+            window.addPublicMessage(rMsg, randomId);
         }
     }, 5000);
 });
