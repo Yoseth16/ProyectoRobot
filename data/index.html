@@ -11,6 +11,8 @@
     <script src="three.min.js"></script>
     <!-- Modelo 3D del rover (basado en referencia CAD) -->
     <script src="rover3d.js"></script>
+    <!-- Controles de órbita para cámara 3D -->
+    <script src="OrbitControls.js"></script>
 </head>
 <body>
 
@@ -130,6 +132,7 @@
                 <div style="display: flex; gap: 8px; margin-top: 8px;">
                     <button class="action-btn sys-btn" id="btn-reset-track" style="flex:1; border-color: var(--accent-yellow); color: var(--accent-yellow);">🔄 RESET</button>
                     <button class="action-btn sys-btn" id="btn-toggle-trail" style="flex:1;">🛤️ TRAIL ON</button>
+                    <button class="action-btn sys-btn" id="btn-toggle-cam" style="flex:1; border-color: var(--accent-green); color: var(--accent-green);">🎥 LIBRE</button>
                 </div>
             </section>
         </div>

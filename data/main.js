@@ -1175,6 +1175,20 @@
             renderer.setClearColor(0x030712);
             container.appendChild(renderer.domElement);
 
+            // --- OrbitControls (cámara libre) ---
+            var orbitControls = null;
+            var freeCamera = false;
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+                orbitControls.enableDamping = true;
+                orbitControls.dampingFactor = 0.08;
+                orbitControls.minDistance = 3;
+                orbitControls.maxDistance = 60;
+                orbitControls.maxPolarAngle = Math.PI / 2.1;
+                orbitControls.target.set(0, 0, 0);
+                orbitControls.enabled = false; // Empieza en modo seguimiento
+            }
+
             // --- Luces ---
             const ambientLight = new THREE.AmbientLight(0x8899bb, 1.0);
             scene.add(ambientLight);
@@ -1309,6 +1323,10 @@
 
             // --- Cámara sigue al rover suavemente ---
             function updateCamera() {
+                if (freeCamera && orbitControls) {
+                    orbitControls.update();
+                    return;
+                }
                 const targetX = roverX - Math.sin(roverHeading) * 10;
                 const targetZ = roverZ - Math.cos(roverHeading) * 10;
 
@@ -1369,6 +1387,20 @@
                 this.innerText = showTrail ? '🛤️ TRAIL ON' : '🛤️ TRAIL OFF';
                 this.style.borderColor = showTrail ? '' : 'var(--accent-red)';
                 this.style.color = showTrail ? '' : 'var(--accent-red)';
+            });
+
+            // --- Toggle cámara libre / seguimiento ---
+            document.getElementById('btn-toggle-cam')?.addEventListener('click', function() {
+                freeCamera = !freeCamera;
+                if (orbitControls) {
+                    orbitControls.enabled = freeCamera;
+                    if (freeCamera) {
+                        orbitControls.target.set(roverX, 0, roverZ);
+                    }
+                }
+                this.innerText = freeCamera ? '🎥 SEGUIR' : '🎥 LIBRE';
+                this.style.borderColor = freeCamera ? 'var(--accent-cyan)' : 'var(--accent-green)';
+                this.style.color = freeCamera ? 'var(--accent-cyan)' : 'var(--accent-green)';
             });
 
             console.log('[3D] Tracking Map inicializado correctamente.');
