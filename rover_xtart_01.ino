@@ -162,9 +162,9 @@ void updateBuzzer() {
 bool ledManual = false;  // true = controlado desde la web
 
 void setLED(uint8_t r, uint8_t g, uint8_t b) {
-  ledcWrite(10, r);
-  ledcWrite(11, g);
-  ledcWrite(12, b);
+  ledcWrite(0, r);
+  ledcWrite(1, g);
+  ledcWrite(2, b);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -409,10 +409,10 @@ void setMotorTargets(int t1, int t2, int t3, int t4) {
   
   // Escribimos directamente para evitar el freno magnético del L298N
   // que ocurre cuando ambos IN1 e IN2 reciben PWM al mismo tiempo.
-  ledcWrite(0, target_in1);
-  ledcWrite(1, target_in2);
-  ledcWrite(2, target_in3);
-  ledcWrite(3, target_in4);
+  ledcWrite(3, target_in1);
+  ledcWrite(4, target_in2);
+  ledcWrite(5, target_in3);
+  ledcWrite(6, target_in4);
 }
 
 // Control de motores

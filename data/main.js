@@ -930,6 +930,8 @@
         }
 
         // Iniciar el loop de chequeo de Gamepads
+        // Marcar que main.js gestiona el gamepad (evita doble loop con gamepad.js)
+        window._gamepadMainJsActive = true;
         window.addEventListener('gamepadconnected', () => {
             console.log("Gamepad detectado! Activando GameLoop...");
             requestAnimationFrame(checkGamepad);

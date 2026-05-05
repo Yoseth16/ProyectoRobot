@@ -83,6 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
 let gamepadIndex = null;
 let lastGamepadState = { fw: false, bw: false, l: false, r: false };
 
+// main.js ya registra su propio gamepadconnected y gestiona el loop principal.
+// Este listener solo actualiza el indicador visual de estado del mando.
 window.addEventListener("gamepadconnected", (e) => {
     gamepadIndex = e.gamepad.index;
     const statusEl = document.getElementById('gamepad-status');
@@ -91,7 +93,10 @@ window.addEventListener("gamepadconnected", (e) => {
         statusEl.style.color = 'var(--accent-green)';
     }
     console.log(`[Gamepad] Conectado: ${e.gamepad.id}`);
-    requestAnimationFrame(updateGamepad);
+    // Solo iniciamos el loop propio si main.js no lo gestiona
+    if (!window._gamepadMainJsActive) {
+        requestAnimationFrame(updateGamepad);
+    }
 });
 
 window.addEventListener("gamepaddisconnected", (e) => {
