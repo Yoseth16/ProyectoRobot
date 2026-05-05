@@ -23,11 +23,11 @@
 
 // ─── LIBRERÍAS ────────────────────────────────────────
 #include <WiFi.h>
+#include <ArduinoJson.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <Wire.h>                  // Bus I2C compartido (OLED, BMP180, TCS34725)
-#include <ArduinoJson.h>
 
 // Sensores
 #include <Adafruit_Sensor.h>
@@ -162,9 +162,9 @@ void updateBuzzer() {
 bool ledManual = false;  // true = controlado desde la web
 
 void setLED(uint8_t r, uint8_t g, uint8_t b) {
-  ledcWrite(0, r);
-  ledcWrite(1, g);
-  ledcWrite(2, b);
+  ledcWrite(10, r);
+  ledcWrite(11, g);
+  ledcWrite(12, b);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -400,12 +400,22 @@ void updateOLED() {
   display.display();
 }
 
+// ═══════════════════════════════════════════════════════
+//  DIRECCIÓN DE MOTORES DIRECTA (SIN SOLAPAMIENTO)
+// ═══════════════════════════════════════════════════════
 void setMotorTargets(int t1, int t2, int t3, int t4) {
   target_in1 = t1; target_in2 = t2;
   target_in3 = t3; target_in4 = t4;
+  
+  // Escribimos directamente para evitar el freno magnético del L298N
+  // que ocurre cuando ambos IN1 e IN2 reciben PWM al mismo tiempo.
+  ledcWrite(0, target_in1);
+  ledcWrite(1, target_in2);
+  ledcWrite(2, target_in3);
+  ledcWrite(3, target_in4);
 }
 
-// Control de motores (conducción diferencial suave mediante PWM)
+// Control de motores
 void moveRover(String direction) {
   Serial.println("MOV: " + direction);
   int speed = 255;
@@ -680,19 +690,12 @@ void setup() {
 void loop() {
   unsigned long now = millis();
 
-  // ── Actualización de motores PWM (Suavizado) ───────
-  if (now - lastMotorUpdate >= MOTOR_INTERVAL) {
-    lastMotorUpdate = now;
-    curr_in1 += (target_in1 - curr_in1) * 0.1;
-    curr_in2 += (target_in2 - curr_in2) * 0.1;
-    curr_in3 += (target_in3 - curr_in3) * 0.1;
-    curr_in4 += (target_in4 - curr_in4) * 0.1;
-
-    ledcWrite(3, (uint8_t)curr_in1);
-    ledcWrite(4, (uint8_t)curr_in2);
-    ledcWrite(5, (uint8_t)curr_in3);
-    ledcWrite(6, (uint8_t)curr_in4);
-  }
+  // ── Actualización de motores PWM (Suavizado) Eliminado ───────
+  // El código de "suavizado" (`curr_in += target... * 0.1`) ha sido eliminado
+  // ya que provocaba que ambos pines IN (ej. IN1 e IN2) tuvieran voltaje
+  // simultáneamente en las transiciones de estado, produciendo un temblor
+  // o estancamiento (freno magnético fuerte) en los motores.
+  // Ahora el movimiento va de inmediato a su respectivo target en setMotorTargets().
 
   // ── Lectura rápida de sensores críticos (patrón millis) ──
   if (now - lastFastRead >= FAST_INTERVAL) {

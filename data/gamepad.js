@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const kp = sliderKp.value;
         const ki = sliderKi.value;
         const kd = sliderKd.value;
-        fetchWithTimeout(`${API_BASE}/pid?kp=${kp}&ki=${ki}&kd=${kd}`)
+        fetchRobot(`/pid?kp=${kp}&ki=${ki}&kd=${kd}`)
             .then(res => {
                 console.log(`[PID] Valores actualizados: Kp=${kp}, Ki=${ki}, Kd=${kd}`);
                 const btn = document.getElementById('btn-send-pid');
@@ -114,14 +114,18 @@ function updateGamepad() {
     if (!gp) return;
 
     // Joysticks analógicos (Eje 1: Y-izq, Eje 0: X-izq)
-    const deadzone = 0.2;
+    const deadzone = 0.25;
     let fw = false, bw = false, l = false, r = false;
 
-    if (gp.axes[1] < -deadzone) fw = true;
-    else if (gp.axes[1] > deadzone) bw = true;
+    // Leer ejes analógicos con magnitud para priorizar el eje dominante
+    const axisY = gp.axes[1] || 0;  // Adelante/Atrás
+    const axisX = gp.axes[0] || 0;  // Izquierda/Derecha
 
-    if (gp.axes[0] < -deadzone) l = true;
-    else if (gp.axes[0] > deadzone) r = true;
+    if (axisY < -deadzone) fw = true;
+    else if (axisY > deadzone) bw = true;
+
+    if (axisX < -deadzone) l = true;
+    else if (axisX > deadzone) r = true;
 
     // DPAD (Botones 12=Up, 13=Down, 14=Left, 15=Right)
     if (gp.buttons[12]?.pressed) fw = true;
@@ -129,16 +133,26 @@ function updateGamepad() {
     if (gp.buttons[14]?.pressed) l = true;
     if (gp.buttons[15]?.pressed) r = true;
 
-    // Determinar dirección a enviar
+    // Determinar dirección a enviar.
+    // En diagonales, priorizamos el eje con mayor magnitud.
+    // Esto evita enviar comandos que el firmware no reconoce.
     let sendDir = null;
-    if (fw && !l && !r) sendDir = 'FORWARD';
-    else if (bw && !l && !r) sendDir = 'BACKWARD';
-    else if (l && !fw && !bw) sendDir = 'LEFT';
-    else if (r && !fw && !bw) sendDir = 'RIGHT';
-    else if (fw && l) sendDir = 'FORWARD_LEFT';
-    else if (fw && r) sendDir = 'FORWARD_RIGHT';
-    else if (bw && l) sendDir = 'BACKWARD_LEFT';
-    else if (bw && r) sendDir = 'BACKWARD_RIGHT';
+
+    if (fw || bw || l || r) {
+        // Si hay input en ambos ejes, priorizar el dominante
+        if ((fw || bw) && (l || r)) {
+            if (Math.abs(axisY) >= Math.abs(axisX)) {
+                // Eje Y dominante → Adelante o Atrás
+                sendDir = fw ? 'FORWARD' : 'BACKWARD';
+            } else {
+                // Eje X dominante → Izquierda o Derecha
+                sendDir = l ? 'LEFT' : 'RIGHT';
+            }
+        } else if (fw) sendDir = 'FORWARD';
+        else if (bw) sendDir = 'BACKWARD';
+        else if (l) sendDir = 'LEFT';
+        else if (r) sendDir = 'RIGHT';
+    }
 
     // Si no hay input y antes había, enviar STOP
     if (!fw && !bw && !l && !r && (lastGamepadState.fw || lastGamepadState.bw || lastGamepadState.l || lastGamepadState.r)) {
@@ -148,7 +162,7 @@ function updateGamepad() {
     if (sendDir) {
         // Evitamos spammear el mismo comando continuamente si no cambia la zona
         if (!window._lastGpCmd || window._lastGpCmd !== sendDir) {
-            fetchWithTimeout(`${API_BASE}/move?dir=${sendDir}`).catch(e => console.log(e));
+            fetchRobot(`/move?dir=${sendDir}`).catch(e => console.log(e));
             if(typeof updateRover3D === 'function') updateRover3D(sendDir); // Actualizar mapa 3D
             window._lastGpCmd = sendDir;
         }

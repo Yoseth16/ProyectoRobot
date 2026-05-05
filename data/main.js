@@ -2,7 +2,7 @@
         /* CONFIGURACIÓN DEL ROBOT                   */
         /* ========================================= */
         // CONSTANTE MOCK MODE: Útil para simular y diseñar la web sin el ESP32 conectado
-        const MOCK_MODE = true;
+        const MOCK_MODE = false;
 
         // Cambiar por la IP real del ESP32 en la red Wi-Fi
         const IP_ROBOT = "192.168.4.1"; 
@@ -1444,4 +1444,4 @@
             };
 
             console.log('[3D] Tracking Map inicializado correctamente.');
-        }
+        }
